@@ -27,7 +27,6 @@ import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.thrift.generated.InvalidOperation;
 import org.apache.camel.component.thrift.generated.Operation;
 import org.apache.camel.component.thrift.generated.Work;
-
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -68,7 +67,7 @@ public class ThriftProducerSyncTest extends ThriftProducerBaseTest {
         assertTrue(responseBody instanceof Integer);
         assertEquals(THRIFT_TEST_NUM1 + THRIFT_TEST_NUM2, responseBody);
     }
-    
+
     @Test
     @SuppressWarnings({"rawtypes", "unchecked"})
     public void testCalculateWithException() throws Exception {
@@ -87,7 +86,37 @@ public class ThriftProducerSyncTest extends ThriftProducerBaseTest {
             assertTrue("Get an InvalidOperation exception", ex.getCause() instanceof InvalidOperation);
         }
     }
-    
+
+    @Test
+    public void testCalculateAfterServerRestart() throws Exception {
+        LOG.info("Thrift calculate method after server restart test start");
+
+        try {
+            testCalculateMethodInvocation();
+        } catch (Exception ex) {
+            fail(ex.getMessage());
+        }
+
+        // Server stop
+        stopThriftServer();
+        Thread.sleep(3000);
+        if (isServing()) {
+            fail("fail to stop thrift server");
+        }
+        // Server restart
+        startThriftServer();
+        Thread.sleep(3000);
+        if (!isServing()) {
+            fail("fail to restart thrift server");
+        }
+
+        try {
+            testCalculateMethodInvocation();
+        } catch (Exception ex) {
+            fail(ex.toString());
+        }
+    }
+
     @Test
     public void testVoidMethodInvocation() throws Exception {
         LOG.info("Thrift method with empty parameters and void output sync test start");
@@ -96,7 +125,7 @@ public class ThriftProducerSyncTest extends ThriftProducerBaseTest {
         Object responseBody = template.requestBody("direct:thrift-ping", requestBody);
         assertNull(responseBody);
     }
-    
+
     @Test
     public void testOneWayMethodInvocation() throws Exception {
         LOG.info("Thrift one-way method sync test start");
@@ -105,12 +134,12 @@ public class ThriftProducerSyncTest extends ThriftProducerBaseTest {
         Object responseBody = template.requestBody("direct:thrift-zip", requestBody);
         assertNull(responseBody);
     }
-    
+
     @Test
     @SuppressWarnings({"rawtypes", "unchecked"})
     public void testAllTypesMethodInvocation() throws Exception {
         LOG.info("Thrift method with all possile types sync test start");
-        
+
         List requestBody = new ArrayList();
 
         requestBody.add(true);
@@ -132,7 +161,7 @@ public class ThriftProducerSyncTest extends ThriftProducerBaseTest {
         assertTrue(responseBody instanceof Integer);
         assertEquals(1, responseBody);
     }
-    
+
     @Test
     @SuppressWarnings({"rawtypes", "unchecked"})
     public void testEchoMethodInvocation() throws Exception {
@@ -141,7 +170,7 @@ public class ThriftProducerSyncTest extends ThriftProducerBaseTest {
         List requestBody = new ArrayList();
 
         requestBody.add(new Work(THRIFT_TEST_NUM1, THRIFT_TEST_NUM2, Operation.MULTIPLY));
-        
+
         Object responseBody = template.requestBody("direct:thrift-echo", requestBody);
 
         assertNotNull(responseBody);

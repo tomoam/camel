@@ -65,4 +65,8 @@ public class ThriftProducerBaseTest extends CamelTestSupport {
             LOG.info("Thrift server stoped");
         }
     }
+
+    protected static boolean isServing() {
+        return server.isServing();
+    }
 }
